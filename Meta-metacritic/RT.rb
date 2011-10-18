@@ -72,7 +72,7 @@ end
 # Method for converting fractions to decimals. Used immediately below
 class String
   def to_frac
-    numerator, denominator = split('/').map(&:to_f)
+    numerator, denominator = split("/").map(&:to_f)
     denominator ||= 1
     numerator/denominator
   end
@@ -98,9 +98,9 @@ def score_convert(n)
     
     case n[1] #to account for + and -
     when "+"
-      score += 5
+      score += 3
     when "-"
-      score -=5
+      score -=3
     end
   end 
   
@@ -123,24 +123,61 @@ end
 
 imdb_results = imdb_search
 
-#Print out basic info (not individual critics' reviews)
+'''
+#Print out basic info (not individual critics reviews)
 print "Title: ", movie_found["title"], "\n"
 print "Year: ", movie_found["year"], "\n"
 print "Runtime: ", movie_found["runtime"], "\n"
 print "RT Summary: ", movie_found["ratings"]["critics_rating"], "\n"
 print "RT Critics Rating: ", movie_found["ratings"]["critics_score"], "\n"
 print "IMDB Rating: ", imdb_results["Rating"], "\n"
+'''
 
 #Print out individual critics' reviews
 movie_critics = get_critics 
 
+#Print out the list of critics, let users exclude critics
+count = 0 
 movie_critics["reviews"].each do |a| 
   if a["original_score"]
+    puts "#{count}) Critic: #{a["critic"]}"
+  end
+  count += 1
+end
+
+print "Which critics would you like to exclude? (use numbers above; put spaces in between numbers)"
+critic_num_to_exclude = gets.split(' ')
+critic_num_to_exclude.collect!{|i| i.to_i } #convert array values to numbers
+
+critic_to_exclude = []
+
+critic_num_to_exclude.each do |n| #form an array of excluded critics' reviews
+  critic_to_exclude << movie_critics["reviews"][n] 
+end  
+
+critic_to_exclude.each do |c| #delete excluded critics' reviews from main array of review
+  movie_critics["reviews"].delete(c)
+end 
+
+sum = 0
+
+critics_list = critic_to_exclude.collect {|c| c["critic"]}
+print "Excluded critics: #{critics_list} \n"
+
+movie_critics["reviews"].each do |a| 
+  if a["original_score"] 
     puts "Critic: #{a["critic"]}"
     puts "Original Score: #{a["original_score"]}"
+
     converted_score = score_convert(a["original_score"])
     puts "Converted Score: #{converted_score}"
+    sum += converted_score 
+
     puts "Quote: #{a["quote"]}"
     print "\n"
-  end 
+  end
 end
+
+#Calculates average converted score, for all RT critics
+avg_converted_score = (sum.to_f)/(movie_critics["reviews"].count)
+printf("Average converted score: %.2f", "#{avg_converted_score}" "\n")
