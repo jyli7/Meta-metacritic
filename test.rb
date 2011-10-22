@@ -1,17 +1,9 @@
+#!/usr/bin/env ruby
+
 require 'rubygems'
 require 'json'
 require 'open-uri'
 require 'nokogiri'
-'''
-Objects
-  Movie
-    Properties
-      Title
-      Date
-      Overall Rating
-      Reviews
-    Methods
-'''
 
 # Method for converting fractions to decimals. Used below in "calculate_average" method.
 def frac_to_float(str)
@@ -100,7 +92,7 @@ def rt(id)
       count += 1
     end
 
-    print "Which critics to exclude? (use numbers above; put spaces between; type \"n\" if none):"
+    print "Which critics to exclude? (identify critic by number; put spaces between numbers; type \"n\" if none):"
     temp = gets
     unless temp == "n\n"
       critic_num_to_exclude = temp.split(' ')
@@ -171,8 +163,8 @@ def rt(id)
     end
     #Calculates average converted score, for all RT critics
     avg_converted_score = ((sum.to_f)/count)
-    printf("Average converted RT score: %.2f", "#{avg_converted_score}")
-    print "\n\n"
+    printf("Rotten tomatoes: %.2f", "#{avg_converted_score}")
+    print "\n"
     return avg_converted_score
   end 
   
@@ -197,10 +189,10 @@ def imdb(title) #returns the movie that the user selected
   movie_found = get_movie(title) #movie_found is a hash that has the basic movie info
   
   #Print out basic info (not individual critics reviews)
+  print "IMDB Rating: ", movie_found["Rating"], "\n\n"
   print "Title: ", movie_found["Title"], "\n"
   print "Year: ", movie_found["Year"], "\n"
   print "Runtime: ", movie_found["Runtime"], "\n"
-  print "IMDB Rating: ", movie_found["Rating"], "\n"
   print "\n"
   return (movie_found["Rating"].to_f)*10
 end
@@ -213,8 +205,36 @@ def metacritic(title)
   return rating
 end
 
+
+def in_theaters
+  url = "http://api.rottentomatoes.com/api/public/v1.0/lists/movies/in_theaters.json?page_limit=25&page=1&country=us&apikey=hv4pzbs4n46nmv7s9w87nzwu"
+  buffer = open(url).read
+
+  # convert JSON data into a hash
+  result = JSON.parse(buffer)
+  movies = result["movies"]
+  movies.sort! {|x, y| x["ratings"]["critics_score"] <=> y["ratings"]["critics_score"]}
+  movies.reverse!
+  
+  puts "Current Releases"
+  
+  print "Score", " "*2, "Title", "\n"
+  movies.each do |h|
+    score = h["ratings"]["critics_score"]
+    print score
+    if score.to_s.length == 1
+      print " "*6
+    else
+      print " "*5
+    end 
+    puts h["title"]
+  end
+end 
+  
+temp = in_theaters  
+
 #Ask user to enter a title
-print "Movie title: "
+print "Movie title (search entire Rotten Tomatoes database): "
 title = gets #take in movie title from command line
 title.chomp!.gsub!(' ', '+') # sub spaces for plus signs
 
@@ -230,11 +250,20 @@ id = movie["id"]
 
 #Run the 3 main functions for RT, IMDB, and MC
 rt_score = rt(id) 
-imdb_score = imdb(title_for_imdb) 
 mc_score = metacritic(title_for_mc).to_i
+imdb_score = imdb(title_for_imdb) 
+
+#Let users define weights
+print "Want a meta-metascore? How much weight to Rotten Tomatoes? (0-1): "
+rt_weight = gets.to_f
+printf("How much weight to metacritic? (0 - %.2f): ", (1-rt_weight))
+mc_weight = gets.to_f
+imdb_weight = 1-(rt_weight+mc_weight)
+printf("Weight to imdb is %.2f", imdb_weight)
+print "\n"
 
 #Calculate and display the meta-metascore
-meta_meta_score = (rt_score + imdb_score + mc_score)/3.0
+meta_meta_score = rt_score*rt_weight + imdb_score*imdb_weight + mc_score*mc_weight
 print "\n"
 printf("Meta-metascore: %.2f", meta_meta_score)
 print "\n\n"
