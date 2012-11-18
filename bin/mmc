@@ -203,7 +203,7 @@ def imdb(title) #returns the movie that the user selected
   print "Year: ", movie_found["Year"], "\n"
   print "Runtime: ", movie_found["Runtime"], "\n"
   print "\n"
-  return (movie_found["Rating"].to_f)*10
+  return (movie_found["imdbRating"].to_f)*10
 end
 
 def metacritic(title)
